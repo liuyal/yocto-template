@@ -292,7 +292,7 @@ SRC_URI = "file://hello.c"
 S = "${WORKDIR}"
 
 do_compile() {
-    ${CC} hello.c -o hello
+    ${CC} ${CFLAGS} ${LDFLAGS} hello.c -o hello
 }
 
 do_install() {
@@ -407,6 +407,17 @@ bitbake hello
 > LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 > ```
 > This points at the well-known MIT license text shipped with OE-Core (`meta/files/common-licenses/MIT`). If you hit this error, re-check `hello.bb` for this line.
+
+> **Note:** The `do_compile` task must pass `${CFLAGS}` and `${LDFLAGS}` to the compiler/linker invocation, otherwise `do_package_qa` fails with:
+> ```text
+> QA Issue: File /usr/bin/hello in package hello doesn't have GNU_HASH (didn't pass LDFLAGS?) [ldflags]
+> ```
+> This happens because BitBake's distro/security hardening flags (e.g. `-Wl,--hash-style=gnu`, `-Wl,-z,relro`, `-Wl,-z,now`, PIE flags) are exported via `LDFLAGS`/`CFLAGS`, but a hand-written `do_compile` that calls `${CC}` directly (or a Makefile that ignores these variables) will silently drop them. Always ensure custom `do_compile`/`do_install` overrides (or Makefiles invoked via `oe_runmake`) forward `${CFLAGS}` and `${LDFLAGS}` to the linker step. The recipe above already includes:
+> ```bitbake
+> do_compile() {
+>     ${CC} ${CFLAGS} ${LDFLAGS} hello.c -o hello
+> }
+> ```
 
 Outputs are generated under:
 

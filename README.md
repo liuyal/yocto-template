@@ -24,23 +24,51 @@ This approach provides:
 
 
 # Architecture
+This setup provides a fully containerized OpenEmbedded/Yocto environment built 
+from first principles using BitBake and OE-Core directly from GitHub, 
+with manually managed layers, distro definitions, machine configurations, 
+recipes, build configuration, and cache management.
 ```text
-Host Machine
+yocto-project/
 │
-├── Docker Engine
+├── docker/
+│   ├── Dockerfile
+│   └── run.sh
 │
-└── yocto-project/
-    │
-    ├── docker/
-    │   ├── Dockerfile
-    │   └── run.sh
-    │
-    ├── bitbake/
-    ├── openembedded-core/
-    ├── meta-project/
-    ├── build/
-    ├── downloads/
-    └── sstate-cache/
+├── env.sh
+│
+├── bitbake/
+│
+├── openembedded-core/
+│
+├── meta-project/
+│   ├── conf/
+│   │   ├── layer.conf
+│   │   ├── distro/
+│   │   │   └── project.conf
+│   │   └── machine/
+│   │       └── qemux86-64.conf
+│   │
+│   ├── recipes-apps/
+│   │   └── hello/
+│   │       ├── hello.bb
+│   │       └── files/
+│   │           └── hello.c
+│   │
+│   ├── recipes-core/
+│   │   └── images/
+│   │       └── project-image.bb
+│   │
+│   └── recipes-kernel/
+│
+├── build/
+│   └── conf/
+│       ├── bblayers.conf
+│       └── local.conf
+│
+├── downloads/
+│
+└── sstate-cache/
 ```
 
 Container Layout:
@@ -621,52 +649,3 @@ docker run \
     "
 ```
 
-# Final Directory Structure
-
-```text
-yocto-project/
-│
-├── docker/
-│   ├── Dockerfile
-│   └── run.sh
-│
-├── env.sh
-│
-├── bitbake/
-│
-├── openembedded-core/
-│
-├── meta-project/
-│   ├── conf/
-│   │   ├── layer.conf
-│   │   ├── distro/
-│   │   │   └── project.conf
-│   │   └── machine/
-│   │       └── qemux86-64.conf
-│   │
-│   ├── recipes-apps/
-│   │   └── hello/
-│   │       ├── hello.bb
-│   │       └── files/
-│   │           └── hello.c
-│   │
-│   ├── recipes-core/
-│   │   └── images/
-│   │       └── project-image.bb
-│   │
-│   └── recipes-kernel/
-│
-├── build/
-│   └── conf/
-│       ├── bblayers.conf
-│       └── local.conf
-│
-├── downloads/
-│
-└── sstate-cache/
-```
-
-This setup provides a fully containerized OpenEmbedded/Yocto environment built 
-from first principles using BitBake and OE-Core directly from GitHub, 
-with manually managed layers, distro definitions, machine configurations, 
-recipes, build configuration, and cache management.

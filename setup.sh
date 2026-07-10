@@ -245,6 +245,8 @@ IMAGE_INSTALL += "hello"
 IMAGE_NAME_SUFFIX = ""
 
 IMAGE_LINK_NAME = "${IMAGE_BASENAME}-${MACHINE}"
+
+IMAGE_FEATURES += "debug-tweaks"
 EOF
 
 echo ""

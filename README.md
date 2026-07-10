@@ -151,6 +151,7 @@ RUN apt-get update && apt-get install -y \
     rsync \
     zstd \
     lz4 \
+    qemu-system-x86 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN locale-gen en_US.UTF-8
@@ -499,8 +500,36 @@ project-image.rootfs.tar.gz
 Run the image in QEMU:
 
 ```bash
-runqemu qemux86-64 project-image
+# Install QEMU (first time only, or add to Dockerfile)
+sudo apt-get install -y qemu-system-x86
+
+# Option A: wrapper script (recommended)
+chmod +x run-image.sh
+./run-image.sh nographic
+
+# Option B: direct QEMU invocation
+qemu-system-x86_64 \
+    -kernel build/tmp/deploy/images/qemux86-64/bzImage \
+    -cpu IvyBridge \
+    -machine q35,i8042=off \
+    -m 256 \
+    -smp 4 \
+    -device virtio-scsi-pci,id=scsi0 \
+    -device scsi-hd,drive=disk0 \
+    -drive id=disk0,file=build/tmp/deploy/images/qemux86-64/project-image-qemux86-64.ext4,if=none,format=raw \
+    -netdev user,id=net0 \
+    -device virtio-net-pci,netdev=net0,mac=52:54:00:12:34:02 \
+    -object rng-random,filename=/dev/urandom,id=rng0 \
+    -device virtio-rng-pci,rng=rng0 \
+    -usb -device usb-tablet \
+    -usb -device usb-kbd \
+    -serial mon:stdio \
+    -serial null \
+    -nographic \
+    -append "root=/dev/sda rw console=ttyS0,115200 oprofile.timer=1 tsc=reliable no_timer_check rcupdate.rcu_expedited=1 swiotlb=0"
 ```
+
+Login as `root` (no password). Exit QEMU with `Ctrl+A` then `X`.
 
 # Step 9: Create a Kernel Recipe
 

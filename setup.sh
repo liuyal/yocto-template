@@ -2,17 +2,23 @@
 
 # Yocto/OpenEmbedded Build Environment Setup - Step 1
 # This script creates the workspace layout and all initial project files
+# Based on: https://github.com/your-repo/yocto-template
 
 set -e  # Exit on error
 
 PROJECT_ROOT=~/yocto-project
+
+echo "=========================================="
+echo "Step 1: Create Workspace & Project Files"
+echo "=========================================="
+echo ""
 
 echo "Creating workspace directories..."
 
 # Create main workspace directories
 mkdir -p "$PROJECT_ROOT"/{docker,bitbake,openembedded-core,downloads,sstate-cache}
 
-# Create meta-project directories
+# Create meta-project directories with all subdirectories
 mkdir -p "$PROJECT_ROOT"/meta-project/{conf/distro,conf/machine,recipes-apps/hello/files,recipes-core/images,recipes-kernel}
 
 # Create build configuration directory
@@ -20,7 +26,11 @@ mkdir -p "$PROJECT_ROOT"/build/conf
 
 cd "$PROJECT_ROOT"
 
-echo "Creating docker/Dockerfile..."
+echo "Changed to: $PROJECT_ROOT"
+echo ""
+
+echo "Creating Docker container configuration..."
+echo "  → docker/Dockerfile"
 cat <<'EOF' > docker/Dockerfile
 FROM ubuntu:24.04
 
@@ -58,6 +68,7 @@ RUN apt-get update && apt-get install -y \
     rsync \
     zstd \
     lz4 \
+    qemu-system-x86 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN locale-gen en_US.UTF-8
@@ -88,7 +99,7 @@ USER $USER_NAME
 WORKDIR /workspace
 EOF
 
-echo "Creating docker/run.sh..."
+echo "  → docker/run.sh"
 cat <<'EOF' > docker/run.sh
 #!/bin/bash
 
@@ -103,7 +114,9 @@ docker run \
 EOF
 chmod +x docker/run.sh
 
-echo "Creating env.sh..."
+echo ""
+echo "Creating environment configuration..."
+echo "  → env.sh"
 cat <<'EOF' > env.sh
 #!/bin/bash
 
@@ -115,7 +128,9 @@ export PATH=$PROJ_ROOT/openembedded-core/scripts:$PATH
 export BBPATH=$PROJ_ROOT/build
 EOF
 
-echo "Creating meta-project/conf/layer.conf..."
+echo ""
+echo "Creating BitBake layer configuration..."
+echo "  → meta-project/conf/layer.conf"
 cat <<'EOF' > meta-project/conf/layer.conf
 BBPATH .= ":${LAYERDIR}"
 
@@ -130,7 +145,8 @@ BBFILE_PRIORITY_project = "100"
 LAYERSERIES_COMPAT_project = "scarthgap"
 EOF
 
-echo "Creating build/conf/bblayers.conf..."
+echo "Creating build system configuration..."
+echo "  → build/conf/bblayers.conf"
 cat <<'EOF' > build/conf/bblayers.conf
 BBLAYERS ?= " \
     /workspace/openembedded-core/meta \
@@ -138,7 +154,7 @@ BBLAYERS ?= " \
 "
 EOF
 
-echo "Creating build/conf/local.conf..."
+echo "  → build/conf/local.conf"
 cat <<'EOF' > build/conf/local.conf
 MACHINE = "qemux86-64"
 
@@ -161,7 +177,9 @@ PARALLEL_MAKE = "-j8"
 CONNECTIVITY_CHECK_URIS = ""
 EOF
 
-echo "Creating meta-project/conf/distro/project.conf..."
+echo ""
+echo "Creating distribution and machine configurations..."
+echo "  → meta-project/conf/distro/project.conf"
 cat <<'EOF' > meta-project/conf/distro/project.conf
 DISTRO_NAME = "Project Distribution"
 
@@ -172,14 +190,16 @@ TARGET_VENDOR = "-project"
 PACKAGE_CLASSES ?= "package_rpm"
 EOF
 
-echo "Creating meta-project/conf/machine/qemux86-64.conf..."
+echo "  → meta-project/conf/machine/qemux86-64.conf"
 cat <<'EOF' > meta-project/conf/machine/qemux86-64.conf
 require conf/machine/include/qemuboot-x86.inc
 
 TARGET_ARCH = "x86_64"
 EOF
 
-echo "Creating meta-project/recipes-apps/hello/files/hello.c..."
+echo ""
+echo "Creating recipe files..."
+echo "  → meta-project/recipes-apps/hello/files/hello.c"
 cat <<'EOF' > meta-project/recipes-apps/hello/files/hello.c
 #include <stdio.h>
 
@@ -190,7 +210,7 @@ int main()
 }
 EOF
 
-echo "Creating meta-project/recipes-apps/hello/hello.bb..."
+echo "  → meta-project/recipes-apps/hello/hello.bb"
 cat <<'EOF' > meta-project/recipes-apps/hello/hello.bb
 SUMMARY = "Hello World"
 
@@ -212,7 +232,7 @@ do_install() {
 }
 EOF
 
-echo "Creating meta-project/recipes-core/images/project-image.bb..."
+echo "  → meta-project/recipes-core/images/project-image.bb"
 cat <<'EOF' > meta-project/recipes-core/images/project-image.bb
 SUMMARY = "Project Image"
 
@@ -228,22 +248,34 @@ IMAGE_LINK_NAME = "${IMAGE_BASENAME}-${MACHINE}"
 EOF
 
 echo ""
-echo "✓ Setup complete!"
+echo "=========================================="
+echo "✓ Step 1 Complete!"
+echo "=========================================="
 echo ""
-echo "Next steps:"
-echo "1. Build the Docker image:"
-echo "   docker build \\"
-echo "       --build-arg USER_ID=\$(id -u) \\"
-echo "       --build-arg GROUP_ID=\$(id -g) \\"
-echo "       --build-arg USER_NAME=\$(whoami) \\"
-echo "       -t project-yocto:1.0 docker/"
+echo "Workspace created at: $PROJECT_ROOT"
 echo ""
-echo "2. Launch the container:"
-echo "   ./docker/run.sh"
+echo "Directory structure:"
+tree -L 2 "$PROJECT_ROOT" 2>/dev/null || find "$PROJECT_ROOT" -type d | head -20
 echo ""
-echo "3. Inside the container, clone the required repositories (Steps 4-5):"
-echo "   git clone -b 2.8 https://github.com/openembedded/bitbake.git"
-echo "   git clone -b scarthgap https://github.com/openembedded/openembedded-core.git"
-echo "   source env.sh"
+echo "=========================================="
+echo "Next Steps:"
+echo "=========================================="
+echo ""
+echo "Step 2: Build the Docker image"
+echo "  Run this on your host machine:"
+echo "  docker build \\"
+echo "    --build-arg USER_ID=\$(id -u) \\"
+echo "    --build-arg GROUP_ID=\$(id -g) \\"
+echo "    --build-arg USER_NAME=\$(whoami) \\"
+echo "    -t project-yocto:1.0 docker/"
+echo ""
+echo "Step 3: Launch the container"
+echo "  ./docker/run.sh"
+echo ""
+echo "Step 4-5: Inside the container, clone repositories"
+echo "  (Run these commands inside the container)"
+echo "  git clone -b 2.8 https://github.com/openembedded/bitbake.git"
+echo "  git clone -b scarthgap https://github.com/openembedded/openembedded-core.git"
+echo "  source env.sh"
 echo ""
 
